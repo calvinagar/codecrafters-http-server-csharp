@@ -11,10 +11,20 @@ server.Start();
 
 var socket = server.AcceptSocket(); // wait for client
 
-// read data from connection
-var data = new byte[1024];
-socket.Receive(data);
+// read request from connection
+var request = new byte[1024];
+socket.Receive(request);
 
-// return 'HTTP/1.1 200 OK\r\n\r\n'
-var response = "HTTP/1.1 200 OK\r\n\r\n";
-socket.Send(Encoding.ASCII.GetBytes(response));
+// parse request, explicitly path
+string[] requestLines = Encoding.ASCII.GetString(request).Split("\r\n");
+
+string [] startLine = requestLines[0].Split(" ");
+string method = startLine[0];
+string path = startLine[1];
+string httpVersion = startLine[2];
+
+// return ok if path is '/'
+// otherwise 404
+var ok = "200 OK";
+var notFound = "404 NOT FOUND";
+socket.Send(Encoding.ASCII.GetBytes($"HTTP/1.1 {(path == "/" ? ok : notFound)}\r\n\r\n"));
