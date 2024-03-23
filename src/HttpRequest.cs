@@ -5,7 +5,7 @@ class HttpRequest
     public string Method { get; }
     public string Path { get; }
     public string HttpVersion { get; }
-    public string[] Headers { get; }
+    public Dictionary<string, string> Headers { get; }
 
     public HttpRequest(byte[] request)
     {
@@ -15,7 +15,24 @@ class HttpRequest
         Method = firstLine[0];
         Path = firstLine[1];
         HttpVersion = firstLine[2];
-        Headers = requestLines.Skip(1).ToArray();
+
+        Headers = new Dictionary<string, string>();
+        foreach (string line in requestLines[1..])
+        {
+            if (!line.Contains(":"))
+                break;
+                
+            string[] splitHeader = line.Split(":");
+            string key = splitHeader[0].Trim();
+            string value = splitHeader[1].Trim();
+
+            Headers.Add(key, value);
+        }
+    }
+
+    public string FindHeader(string key)
+    {
+        return Headers[key];
     }
 }
 

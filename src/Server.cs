@@ -23,6 +23,7 @@ static class Server
 
             HttpResponse response = HandleRequest(request);
             Console.WriteLine(response);
+
             socket.Send(response.ToBytes());
         }
     }
@@ -34,7 +35,7 @@ static class Server
         {
             try
             {
-                response.setBody(Get(request.Path));
+                response.setBody(Get(request));
                 response.setCode(HttpResponseCodes.OK);
             }
             catch (Exception e)
@@ -50,10 +51,10 @@ static class Server
         return response;
     }
 
-    public static string Get(string path)
+    public static string Get(HttpRequest request)
     {
         // parse path
-        path = path[1..];
+        string path = request.Path[1..];
         string[] splitPath = path.Split("/");
         string basePath = splitPath[0];
 
@@ -64,6 +65,9 @@ static class Server
 
             case "echo":
                 return path[(basePath.Length + 1)..];
+
+            case "user-agent":
+                return request.FindHeader("User-Agent");
 
             default:
                 throw new Exception($"Path {path} not found.");
