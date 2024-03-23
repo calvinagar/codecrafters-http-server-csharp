@@ -1,30 +1,70 @@
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 
-// You can use print statements as follows for debugging, they'll be visible when running tests.
-Console.WriteLine("Logs from your program will appear here!");
+static class Server
+{
+    private static TcpListener listener { get; set; }
 
-// Uncomment this block to pass the first stage
-TcpListener server = new TcpListener(IPAddress.Any, 4221);
-server.Start();
+    public static void Main(string[] args)
+    {
+        // You can use print statements as follows for debugging, they'll be visible when running tests.
+        Console.WriteLine("Logs from your program will appear here!");
 
-var socket = server.AcceptSocket(); // wait for client
+        listener = new TcpListener(IPAddress.Any, 4221);
+        listener.Start();
 
-// read request from connection
-var request = new byte[1024];
-socket.Receive(request);
+        while (true)
+        {
+            Socket socket = listener.AcceptSocket();
 
-// parse request, explicitly path
-string[] requestLines = Encoding.ASCII.GetString(request).Split("\r\n");
+            byte[] requestBuffer = new byte[1024];
+            socket.Receive(requestBuffer);
 
-string [] startLine = requestLines[0].Split(" ");
-string method = startLine[0];
-string path = startLine[1];
-string httpVersion = startLine[2];
+            HttpRequest request = new HttpRequest(requestBuffer);
 
-// return ok if path is '/'
-// otherwise 404
-var ok = "200 OK";
-var notFound = "404 NOT FOUND";
-socket.Send(Encoding.ASCII.GetBytes($"HTTP/1.1 {(path == "/" ? ok : notFound)}\r\n\r\n"));
+            HttpResponse response = HandleRequest(request);
+        
+            socket.Send(response.ToBytes());
+        }
+    }
+
+    public static HttpResponse HandleRequest(HttpRequest request)
+    {
+        HttpResponse response = new HttpResponse();
+
+        if (request.Method == HttpRequestMethods.GET)
+        {
+            try
+            {
+                response.setBody(Get(request.Path));
+                response.setCode(HttpResponseCodes.OK);
+            }
+            catch (Exception e)
+            {
+                response.setCode(HttpResponseCodes.NOT_FOUND);
+            }
+        } 
+        else
+        {
+            response.setCode(HttpResponseCodes.NOT_ALLOWED);
+        }
+
+        return response;
+    }
+
+    public static string Get(string path)
+    {
+        // parse path
+        string[] parsedPath = path.Split("/");
+        string basePath = parsedPath[0];
+
+        switch (basePath)
+        {
+            case "echo":
+                return parsedPath[1];
+
+            default:
+                throw new Exception($"Path {path} not found.");
+        }
+    }
+}
