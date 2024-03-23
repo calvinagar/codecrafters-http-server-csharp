@@ -4,11 +4,11 @@ using System.Net.Sockets;
 static class Server
 {
     private static TcpListener Listener = new TcpListener(IPAddress.Any, 4221);
+    private static string[] Args;
 
     public static void Main(string[] args)
     {
-        // You can use print statements as follows for debugging, they'll be visible when running tests.
-        Console.WriteLine("Logs from your program will appear here!");
+        Args = args;
 
         Listener.Start();
 
@@ -23,7 +23,6 @@ static class Server
                 HttpRequest request = new HttpRequest(requestBuffer);
 
                 HttpResponse response = HandleRequest(request);
-                Console.WriteLine(response);
 
                 socket.Send(response.ToBytes());
             });
@@ -37,25 +36,28 @@ static class Server
         {
             try
             {
-                response.setBody(Get(request));
+                Get(request, response);
                 response.setCode(HttpResponseCodes.OK);
             }
             catch (Exception e)
             {
+                Console.Error.WriteLine(e);
                 response.setCode(HttpResponseCodes.NOT_FOUND);
+                response.clearBody();
             }
         } 
         else
         {
             response.setCode(HttpResponseCodes.NOT_ALLOWED);
+            response.clearBody();
         }
 
         return response;
     }
 
-    public static string Get(HttpRequest request)
+    public static HttpResponse Get(HttpRequest request, HttpResponse response)
     {
-        // parse path
+        // Parse base path.
         string path = request.Path[1..];
         string[] splitPath = path.Split("/");
         string basePath = splitPath[0];
@@ -63,16 +65,49 @@ static class Server
         switch (basePath)
         {
             case "":
-                return "";
+                response.setBodyAsText("");
+                break;
 
             case "echo":
-                return path[(basePath.Length + 1)..];
+                path = path[(basePath.Length + 1)..];
+                response.setBodyAsText(path);
+                break;
 
             case "user-agent":
-                return request.FindHeader("User-Agent");
+                response.setBodyAsText(request.GetHeader("User-Agent"));
+                break;
+
+            case "files":
+                path = path[(basePath.Length + 1)..];
+                try
+                {
+                    response.setBodyAsFile(GetFile(path));
+                }
+                catch (Exception e)
+                {
+                    throw;
+                }
+                break;
 
             default:
                 throw new Exception($"Path {path} not found.");
         }
+
+        return response;
+    }
+
+    public static string GetFile(string path)
+    {
+        // Parse "--directory" argument.
+        if (!Args.Contains("--directory"))
+            throw new Exception($"\"--directory\" command line argument was not passed in.");
+
+        string directory = Args[Array.IndexOf(Args, "--directory") + 1];
+        string filePath = directory + path;
+
+        if (!File.Exists(filePath))
+            throw new Exception($"File at {path} not found.");
+
+        return File.ReadAllText(filePath);
     }
 }

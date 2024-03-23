@@ -19,7 +19,7 @@ class HttpResponse
         Code = code;
     }
 
-    public void setBody(string body)
+    public void setBodyAsText(string body)
     {
         if (body == "") 
             return;
@@ -29,16 +29,35 @@ class HttpResponse
         Body = body;
     }
 
+    public void setBodyAsFile(string body)
+    {
+        if (body == "") 
+            return;
+
+        ContentType = ContentTypes.File;
+        ContentLength = body.Length;
+        Body = body;
+    }
+
+    public void clearBody()
+    {
+        ContentType = null;
+        ContentLength = null;
+        Body = null;
+    }
+
     public override string ToString()
     {
         StringBuilder response = new StringBuilder();
         
         response.Append($"{HttpVersion} {Code}\r\n");
+        
+        // via Hint on bottom of page of "Get a file" step
+        response.Append($"Content-Length: {ContentLength ?? 0}\r\n");
 
         if (Body != null)
         {
             response.Append($"Content-Type: {ContentType}\r\n");
-            response.Append($"Content-Length: {ContentLength}\r\n");
             response.Append($"\r\n");
 
             response.Append(Body);
@@ -66,4 +85,5 @@ public static class HttpResponseCodes
 public static class ContentTypes
 {
     public static string Text = "text/plain";
+    public static string File = "application/octet-stream";
 }

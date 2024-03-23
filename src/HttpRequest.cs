@@ -21,7 +21,7 @@ class HttpRequest
         {
             if (!line.Contains(":"))
                 break;
-                
+
             string[] splitHeader = line.Split(":");
             string key = splitHeader[0].Trim();
             string value = splitHeader[1].Trim();
@@ -30,7 +30,7 @@ class HttpRequest
         }
     }
 
-    public string FindHeader(string key)
+    public string GetHeader(string key)
     {
         return Headers[key];
     }
