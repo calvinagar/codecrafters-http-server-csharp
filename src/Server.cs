@@ -3,19 +3,18 @@ using System.Net.Sockets;
 
 static class Server
 {
-    private static TcpListener listener { get; set; }
+    private static TcpListener Listener = new TcpListener(IPAddress.Any, 4221);
 
     public static void Main(string[] args)
     {
         // You can use print statements as follows for debugging, they'll be visible when running tests.
         Console.WriteLine("Logs from your program will appear here!");
 
-        listener = new TcpListener(IPAddress.Any, 4221);
-        listener.Start();
+        Listener.Start();
 
         while (true)
         {
-            Socket socket = listener.AcceptSocket();
+            Socket socket = Listener.AcceptSocket();
 
             byte[] requestBuffer = new byte[1024];
             socket.Receive(requestBuffer);
@@ -60,6 +59,9 @@ static class Server
 
         switch (basePath)
         {
+            case "/":
+                return "";
+
             case "echo":
                 return parsedPath[1];
 
