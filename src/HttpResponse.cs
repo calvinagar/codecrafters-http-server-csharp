@@ -3,7 +3,7 @@ using System.Text;
 class HttpResponse
 {
     private string HttpVersion { get; }
-    private string Code { get; set; }
+    private string? Code { get; set; }
 
     private string? ContentType { get; set; }
     private int? ContentLength { get; set; }
@@ -29,7 +29,7 @@ class HttpResponse
         Body = body;
     }
 
-    public byte[] ToBytes()
+    public override string ToString()
     {
         StringBuilder response = new StringBuilder();
         
@@ -47,7 +47,12 @@ class HttpResponse
 
         response.Append($"\r\n");
 
-        return Encoding.ASCII.GetBytes(response.ToString());
+        return response.ToString();
+    }
+
+    public byte[] ToBytes()
+    {
+        return Encoding.ASCII.GetBytes(this.ToString());
     }
 }
 

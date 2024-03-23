@@ -22,7 +22,7 @@ static class Server
             HttpRequest request = new HttpRequest(requestBuffer);
 
             HttpResponse response = HandleRequest(request);
-        
+            Console.WriteLine(response);
             socket.Send(response.ToBytes());
         }
     }
@@ -30,7 +30,6 @@ static class Server
     public static HttpResponse HandleRequest(HttpRequest request)
     {
         HttpResponse response = new HttpResponse();
-
         if (request.Method == HttpRequestMethods.GET)
         {
             try
@@ -54,16 +53,17 @@ static class Server
     public static string Get(string path)
     {
         // parse path
-        string[] parsedPath = path.Split("/");
-        string basePath = parsedPath[0];
+        path = path[1..];
+        string[] splitPath = path.Split("/");
+        string basePath = splitPath[0];
 
         switch (basePath)
         {
-            case "/":
+            case "":
                 return "";
 
             case "echo":
-                return parsedPath[1];
+                return path[(basePath.Length + 1)..];
 
             default:
                 throw new Exception($"Path {path} not found.");
