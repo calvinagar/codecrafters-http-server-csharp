@@ -16,15 +16,17 @@ static class Server
         {
             Socket socket = Listener.AcceptSocket();
 
-            byte[] requestBuffer = new byte[1024];
-            socket.Receive(requestBuffer);
+            Task.Run(() => {
+                byte[] requestBuffer = new byte[1024];
+                socket.Receive(requestBuffer);
 
-            HttpRequest request = new HttpRequest(requestBuffer);
+                HttpRequest request = new HttpRequest(requestBuffer);
 
-            HttpResponse response = HandleRequest(request);
-            Console.WriteLine(response);
+                HttpResponse response = HandleRequest(request);
+                Console.WriteLine(response);
 
-            socket.Send(response.ToBytes());
+                socket.Send(response.ToBytes());
+            });
         }
     }
 
