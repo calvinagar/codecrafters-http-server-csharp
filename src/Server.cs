@@ -4,7 +4,7 @@ using System.Net.Sockets;
 static class Server
 {
     private static TcpListener Listener = new TcpListener(IPAddress.Any, 4221);
-    private static string[] Args;
+    private static string[]? Args;
 
     public static void Main(string[] args)
     {
@@ -45,7 +45,21 @@ static class Server
                 response.setCode(HttpResponseCodes.NOT_FOUND);
                 response.clearBody();
             }
-        } 
+        }
+        else if (request.Method == HttpRequestMethods.POST)
+        {
+            try
+            {
+                Post(request, response);
+                response.setCode(HttpResponseCodes.CREATED);
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e);
+                response.setCode(HttpResponseCodes.BAD_REQUEST);
+                response.clearBody();
+            }
+        }
         else
         {
             response.setCode(HttpResponseCodes.NOT_ALLOWED);
@@ -62,15 +76,18 @@ static class Server
         string[] splitPath = path.Split("/");
         string basePath = splitPath[0];
 
+        if (basePath == "")
+        {
+            response.setBodyAsText("");
+            return response;
+        }
+
         switch (basePath)
         {
-            case "":
-                response.setBodyAsText("");
-                break;
-
             case "echo":
-                path = path[(basePath.Length + 1)..];
-                response.setBodyAsText(path);
+                // Remove basePath from path.
+                // + 1 for trailing '/'.
+                response.setBodyAsText(path[(basePath.Length + 1)..]);
                 break;
 
             case "user-agent":
@@ -78,19 +95,14 @@ static class Server
                 break;
 
             case "files":
-                path = path[(basePath.Length + 1)..];
-                try
-                {
-                    response.setBodyAsFile(GetFile(path));
-                }
-                catch (Exception e)
-                {
-                    throw;
-                }
+                // Remove basePath from path.
+                // + 1 for trailing '/'.
+                try { response.setBodyAsFile(GetFile(path[(basePath.Length + 1)..])); }
+                catch { throw; }
                 break;
 
             default:
-                throw new Exception($"Path {path} not found.");
+                throw new Exception($"GET path '{basePath}' not found.");
         }
 
         return response;
@@ -106,8 +118,56 @@ static class Server
         string filePath = directory + path;
 
         if (!File.Exists(filePath))
-            throw new Exception($"File at {path} not found.");
+            throw new Exception($"File at {filePath} was not found.");
 
         return File.ReadAllText(filePath);
+    }
+
+    public static HttpResponse Post(HttpRequest request, HttpResponse response)
+    {
+        // Parse base path.
+        string path = request.Path[1..];
+        string[] splitPath = path.Split("/");
+        string basePath = splitPath[0];
+
+        // Remove basePath from path.
+        // + 1 for trailing '/'.
+        path = path[(basePath.Length + 1)..];
+        switch (basePath)
+        {
+            case "files":
+                try { PostFile(path, request.Body); }
+                catch { throw; }
+                break;
+
+            default:
+                throw new Exception($"POST path '{basePath}' not found.");
+        }
+
+        return response;
+    }
+
+    public static void PostFile(string path, string body)
+    {
+        // Parse "--directory" argument.
+        if (!Args.Contains("--directory"))
+            throw new Exception($"\"--directory\" command line argument was not passed in.");
+
+        string directory = Args[Array.IndexOf(Args, "--directory") + 1];
+        string filePath = directory + path;
+
+        if (File.Exists(filePath))
+            throw new Exception($"File at {filePath} already exists.");
+
+        try
+        {
+            File.WriteAllText(filePath, body);
+        }
+        catch
+        {
+            throw new Exception($"Issue writing contents to '{filePath}'.");
+        }
+
+        return;
     }
 }

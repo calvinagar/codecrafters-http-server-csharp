@@ -78,6 +78,8 @@ class HttpResponse
 public static class HttpResponseCodes
 {
     public static string OK = "200 OK";
+    public static string CREATED = "201 CREATED";
+    public static string BAD_REQUEST = "400 BAD REQUEST";
     public static string NOT_FOUND = "404 NOT FOUND";
     public static string NOT_ALLOWED = "405 METHOD NOT ALLOWED";
 }

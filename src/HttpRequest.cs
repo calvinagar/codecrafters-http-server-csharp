@@ -6,6 +6,7 @@ class HttpRequest
     public string Path { get; }
     public string HttpVersion { get; }
     public Dictionary<string, string> Headers { get; }
+    public string Body { get; }
 
     public HttpRequest(byte[] request)
     {
@@ -28,6 +29,14 @@ class HttpRequest
 
             Headers.Add(key, value);
         }
+
+        string[] bodyAsArray = requestLines[(Headers.Count + 1)..];
+        Body = "";
+        foreach (string line  in bodyAsArray)
+        {
+            Body += line;
+        }
+        Body = Body.TrimEnd('\x00');
     }
 
     public string GetHeader(string key)
@@ -39,4 +48,5 @@ class HttpRequest
 public static class HttpRequestMethods
 {
     public static string GET = "GET";
+    public static string POST = "POST";
 }
